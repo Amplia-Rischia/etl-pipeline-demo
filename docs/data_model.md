@@ -15,6 +15,14 @@ This document defines the star schema design for our ETL/ELT pipeline processing
 
 **Total Records**: 61,500
 
+## Current Implementation Status
+
+**Phase 3 Complete**: Staging tables operational in `staging_area` dataset
+- ✅ `customers` - 10,000 records loaded
+- ✅ `products` - 500 records loaded  
+- ✅ `marketing_campaigns` - 1,000 records loaded
+- ⏳ `sales_transactions` - Pipeline ready for 50,000 records
+
 ## Star Schema Design
 
 ```
@@ -56,7 +64,7 @@ This document defines the star schema design for our ETL/ELT pipeline processing
 ## Dimension Tables
 
 ### dim_customers
-**Source**: CSV files (`gs://synthetic-data-csv-data-demo-etl/data/synthetic_customers_*.csv`)
+**Source**: CSV files (`gs://synthetic-data-csv-data-demo-etl/synthetic_customers_*.csv`)
 **Records**: ~10,000
 
 | Column | Type | Description | Source Field |
@@ -69,8 +77,8 @@ This document defines the star schema design for our ETL/ELT pipeline processing
 | phone | STRING | Customer phone number | phone |
 | address | STRING | Customer address | address |
 | city | STRING | Customer city | city |
-| postal_code | STRING | Customer postal code | postal_code |
 | registration_date | DATE | Customer registration date | registration_date |
+| age | INTEGER | Customer age | age |
 | created_date | TIMESTAMP | ETL load timestamp | CURRENT_TIMESTAMP() |
 
 ### dim_products
@@ -82,11 +90,17 @@ This document defines the star schema design for our ETL/ELT pipeline processing
 | product_id | STRING | Unique product identifier (PK) | product_id |
 | name | STRING | Product name | name |
 | category | STRING | Product category | category |
-| price | NUMERIC(10,2) | Product price in EUR | price |
-| description | STRING | Product description | description |
+| subcategory | STRING | Product subcategory | subcategory |
 | brand | STRING | Product brand | brand |
-| weight | NUMERIC(8,3) | Product weight | weight |
-| dimensions | STRING | Product dimensions | dimensions |
+| price | NUMERIC(10,2) | Product price in EUR | price |
+| currency | STRING | Price currency | currency |
+| description | STRING | Product description | description |
+| availability | BOOLEAN | Product availability | availability |
+| stock_quantity | INTEGER | Stock quantity | stock_quantity |
+| rating | NUMERIC(3,2) | Product rating | rating |
+| reviews_count | INTEGER | Number of reviews | reviews_count |
+| weight_kg | NUMERIC(8,3) | Product weight in kg | weight_kg |
+| country_origin | STRING | Country of origin | country_origin |
 | created_date | TIMESTAMP | ETL load timestamp | CURRENT_TIMESTAMP() |
 
 ### dim_campaigns
@@ -95,14 +109,19 @@ This document defines the star schema design for our ETL/ELT pipeline processing
 
 | Column | Type | Description | Source Field |
 |--------|------|-------------|--------------|
-| campaign_id | STRING | Unique campaign identifier (PK) | document_id |
+| campaign_id | STRING | Unique campaign identifier (PK) | campaign_id |
 | name | STRING | Campaign name | name |
-| type | STRING | Campaign type | type |
+| channel | STRING | Marketing channel | channel |
 | status | STRING | Campaign status | status |
+| target_audience | STRING | Target audience | target_audience |
 | budget | NUMERIC(12,2) | Campaign budget | budget |
+| actual_spend | NUMERIC(12,2) | Actual spend | actual_spend |
 | start_date | DATE | Campaign start date | start_date |
 | end_date | DATE | Campaign end date | end_date |
-| target_audience | STRING | Target audience | target_audience |
+| conversion_rate | NUMERIC(6,4) | Conversion rate | conversion_rate |
+| impressions | INTEGER | Total impressions | impressions |
+| clicks | INTEGER | Total clicks | clicks |
+| conversions | INTEGER | Total conversions | conversions |
 | created_date | TIMESTAMP | ETL load timestamp | CURRENT_TIMESTAMP() |
 
 ## Fact Table
@@ -113,19 +132,20 @@ This document defines the star schema design for our ETL/ELT pipeline processing
 
 | Column | Type | Description | Source Field |
 |--------|------|-------------|--------------|
-| transaction_id | STRING | Unique transaction identifier (PK) | document_id |
+| transaction_id | STRING | Unique transaction identifier (PK) | transaction_id |
 | customer_id | STRING | Foreign key to dim_customers | customer_id |
 | product_id | STRING | Foreign key to dim_products | product_id |
 | campaign_id | STRING | Foreign key to dim_campaigns | campaign_id |
 | quantity | INTEGER | Quantity purchased | quantity |
 | unit_price | NUMERIC(10,2) | Unit price at time of sale | unit_price |
-| total_amount | NUMERIC(12,2) | Total transaction amount | total_amount |
+| amount | NUMERIC(12,2) | Total transaction amount | amount |
 | discount_amount | NUMERIC(10,2) | Discount applied | discount_amount |
 | tax_amount | NUMERIC(10,2) | Tax amount | tax_amount |
 | transaction_date | DATE | Date of transaction | transaction_date |
-| transaction_time | TIME | Time of transaction | transaction_time |
 | payment_method | STRING | Payment method used | payment_method |
-| order_status | STRING | Order status | order_status |
+| status | STRING | Transaction status | status |
+| shipping_address | STRING | Shipping address | shipping_address |
+| order_notes | STRING | Order notes | order_notes |
 | created_timestamp | TIMESTAMP | ETL load timestamp | CURRENT_TIMESTAMP() |
 
 ## Foreign Key Relationships
@@ -150,7 +170,7 @@ This document defines the star schema design for our ETL/ELT pipeline processing
 
 ### Data Validation
 - **Dates**: transaction_date must be between campaign start_date and end_date
-- **Amounts**: total_amount = (quantity × unit_price) - discount_amount + tax_amount
+- **Amounts**: amount = (quantity × unit_price) - discount_amount + tax_amount
 - **Status**: Only valid status values allowed per business rules
 
 ### Null Handling
@@ -163,7 +183,7 @@ This document defines the star schema design for our ETL/ELT pipeline processing
 ### BigQuery Clustering
 - **dim_customers**: Clustered by country, registration_date
 - **dim_products**: Clustered by category, price
-- **dim_campaigns**: Clustered by type, start_date
+- **dim_campaigns**: Clustered by channel, start_date
 - **fact_sales_transactions**: Clustered by transaction_date, customer_id
 
 ### Partitioning

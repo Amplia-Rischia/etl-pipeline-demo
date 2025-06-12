@@ -1,5 +1,30 @@
 # Setup Instructions
 
+## Environment Setup
+
+```bash
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install pandas google-cloud-storage google-cloud-bigquery google-cloud-firestore
+```
+
+## GCP Authentication
+
+```bash
+gcloud auth application-default login
+export GOOGLE_APPLICATION_CREDENTIALS=path/to/credentials.json
+```
+
+## Data Lake Setup
+
+```bash
+# Create data lake bucket and folder structure
+./setup/scripts/create_data_lake.sh
+```
+
 ## Airflow Connections
 
 ### Configured Connections
@@ -15,7 +40,6 @@
 
 ### Manual Configuration
 If script fails, configure manually in Airflow UI:
-
 1. **BigQuery Connection**
    - Conn Id: `bigquery_default`
    - Conn Type: `Google Cloud`
