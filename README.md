@@ -14,16 +14,18 @@ This pipeline processes data from three sources:
 ```
 etl-pipeline-demo/
 ├── dags/                  # Airflow DAGs
-│   ├── extract/          # Data extraction modules
-│   ├── transform/        # Data transformation logic
-│   ├── load/            # Data loading utilities
-│   └── utils/           # Shared utilities
+│   ├── csv_ingestion_dag.py      # CSV ingestion pipeline
+│   ├── api_ingestion_dag.py      # API ingestion pipeline
+│   ├── firestore_ingestion_dag.py # Firestore ingestion pipeline
+│   ├── utils/             # Data lake utilities
+│   └── config/            # Schema validation
 ├── sql/                  # SQL scripts
 │   ├── staging/         # Staging area DDL/DML
 │   ├── transforms/      # Data transformation SQL
 │   └── warehouse/       # Data warehouse schema
-├── config/              # Configuration files
 ├── setup/               # Environment setup scripts
+│   └── scripts/
+│       └── create_data_lake.sh   # Data lake setup
 ├── docs/                # Documentation
 ├── tests/               # Testing suite
 └── logs/                # Application logs
@@ -33,7 +35,9 @@ etl-pipeline-demo/
 
 1. **Environment Setup**
    ```bash
-   pip install -r requirements.txt
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install pandas google-cloud-storage google-cloud-bigquery google-cloud-firestore
    ```
 
 2. **GCP Configuration**
@@ -42,9 +46,9 @@ etl-pipeline-demo/
    export GOOGLE_APPLICATION_CREDENTIALS=path/to/credentials.json
    ```
 
-3. **BigQuery Setup**
+3. **Data Lake Setup**
    ```bash
-   ./setup/scripts/create_datasets.sh
+   ./setup/scripts/create_data_lake.sh
    ```
 
 ## Data Sources
@@ -52,14 +56,9 @@ etl-pipeline-demo/
 - **Project ID**: `data-demo-etl`
 - **Region**: `europe-west1`
 - **CSV Storage**: `gs://synthetic-data-csv-data-demo-etl/`
+- **Data Lake**: `gs://etl-demo-datalake-data-demo-etl/`
 - **API Endpoint**: `https://europe-west1-data-demo-etl.cloudfunctions.net/products-api`
 - **Firestore Collections**: `marketing_campaigns`, `sales_transactions`
-
-## Development
-
-- **Airflow**: Local development with docker-compose
-- **Testing**: `pytest tests/`
-- **Code Quality**: `black . && flake8`
 
 ## Documentation
 
