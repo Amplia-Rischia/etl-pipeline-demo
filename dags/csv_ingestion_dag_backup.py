@@ -1,5 +1,5 @@
 """
-CSV Ingestion DAG - WITH LINEAGE TRACKING
+CSV Ingestion DAG - Simplified for Demo
 /dags/csv_ingestion_dag.py
 
 Extract customer CSV from source bucket → Data Lake → BigQuery staging
@@ -17,7 +17,6 @@ import logging
 
 from utils.datalake_utils import DataLakeManager, DataValidator
 from config.validation_schemas import CUSTOMER_SCHEMA
-from utils.lineage_tracking import LineageTracker, log_lineage_execution
 
 # Configuration
 SOURCE_BUCKET = "synthetic-data-csv-data-demo-etl"
@@ -36,15 +35,14 @@ default_args = {
 dag = DAG(
     'csv_ingestion_pipeline',
     default_args=default_args,
-    description='Simple CSV ingestion pipeline with lineage tracking',
-    schedule_interval=None,  # Manual trigger only
+    description='Simple CSV ingestion pipeline',
+    schedule_interval=timedelta(hours=6),
     catchup=False,
-    tags=['csv', 'customers', 'lineage']
+    tags=['csv', 'customers']
 )
 
-@log_lineage_execution
 def extract_csv(**context):
-    """Extract latest CSV from source bucket - WITH LINEAGE"""
+    """Extract latest CSV from source bucket"""
     storage_client = storage.Client()
     bucket = storage_client.bucket(SOURCE_BUCKET)
     
@@ -61,12 +59,11 @@ def extract_csv(**context):
     return {
         'data': df.to_json(orient='records'),
         'source_file': latest_blob.name,
-        'record_count': len(df)  # This will be captured by lineage decorator
+        'record_count': len(df)
     }
 
-@log_lineage_execution
 def validate_transform(**context):
-    """Validate and add metadata - WITH LINEAGE"""
+    """Validate and add metadata"""
     ti = context['ti']
     result = ti.xcom_pull(task_ids='extract_csv')
     
@@ -81,22 +78,16 @@ def validate_transform(**context):
     
     # Add metadata
     df['ingestion_timestamp'] = datetime.utcnow()
-    df['ingestion_timestamp'] = df['ingestion_timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S UTC')
     df['source_file'] = result['source_file']
     
     logging.info(f"Validated and transformed {len(df)} records")
     
-    return {
-        'data': df.to_json(orient='records'),
-        'record_count': len(df)
-    }
+    return df.to_json(orient='records')
 
-@log_lineage_execution
 def load_to_datalake(**context):
-    """Load to data lake raw layer - WITH LINEAGE"""
+    """Load to data lake raw layer"""
     ti = context['ti']
-    data_result = ti.xcom_pull(task_ids='validate_transform')
-    data = data_result['data'] if isinstance(data_result, dict) else data_result
+    data = ti.xcom_pull(task_ids='validate_transform')
     
     df = pd.read_json(data)
     
@@ -109,30 +100,7 @@ def load_to_datalake(**context):
     
     logging.info(f"Uploaded {len(df)} records to data lake")
     
-    return {
-        'filename': filename,
-        'record_count': len(df)
-    }
-
-def capture_csv_lineage(**context):
-    """Capture lineage for CSV ingestion pipeline"""
-    tracker = LineageTracker()
-    dag_id = context['dag'].dag_id
-    task_id = context['task'].task_id
-    
-    relationship_id = tracker.capture_transformation_lineage(
-        pipeline_name='CSV Ingestion Pipeline',
-        dag_id=dag_id,
-        task_id=task_id,
-        source_id='SRC_CSV_CUSTOMERS',
-        target_id='TGT_STAGING_CUSTOMERS',
-        transformation_id='TRANS_CUST_001',
-        relationship_type='DIRECT_COPY',
-        confidence_score=1.0
-    )
-    
-    logging.info(f"Captured CSV ingestion lineage: {relationship_id}")
-    return f"lineage_captured_csv_{relationship_id}"
+    return filename
 
 # Tasks
 extract_task = PythonOperator(
@@ -173,7 +141,7 @@ create_table = BigQueryCreateEmptyTableOperator(
 load_bq = GCSToBigQueryOperator(
     task_id='load_to_bigquery',
     bucket=DATALAKE_BUCKET,
-    source_objects=['raw/{{ ti.xcom_pull(task_ids="load_to_datalake")["filename"] if ti.xcom_pull(task_ids="load_to_datalake") is not none else ti.xcom_pull(task_ids="load_to_datalake") }}'],
+    source_objects=['raw/{{ ti.xcom_pull(task_ids="load_to_datalake") }}'],
     destination_project_dataset_table=f'{PROJECT_ID}.{DATASET_ID}.{TABLE_ID}',
     write_disposition='WRITE_APPEND',
     source_format='CSV',
@@ -181,12 +149,5 @@ load_bq = GCSToBigQueryOperator(
     dag=dag
 )
 
-# Lineage capture task
-capture_lineage_task = PythonOperator(
-    task_id='capture_csv_lineage',
-    python_callable=capture_csv_lineage,
-    dag=dag
-)
-
-# Flow WITH LINEAGE
-extract_task >> validate_task >> load_task >> create_table >> load_bq >> capture_lineage_task
+# Flow
+extract_task >> validate_task >> load_task >> create_table >> load_bq

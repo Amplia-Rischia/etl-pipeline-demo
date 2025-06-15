@@ -1,5 +1,5 @@
 """
-Firestore Ingestion DAG - Updated with JSON Direct Loading - WITH LINEAGE TRACKING
+Firestore Ingestion DAG - Updated with JSON Direct Loading
 /dags/firestore_ingestion_dag.py
 
 Extract campaigns and transactions from Firestore → Data Lake → BigQuery staging
@@ -18,7 +18,6 @@ import logging
 
 from utils.datalake_utils import DataLakeManager, DataValidator
 from config.validation_schemas import CAMPAIGN_SCHEMA, TRANSACTION_SCHEMA
-from utils.lineage_tracking import LineageTracker, log_lineage_execution
 
 # Configuration
 PROJECT_ID = "data-demo-etl"
@@ -37,15 +36,14 @@ default_args = {
 dag = DAG(
     'firestore_ingestion_pipeline',
     default_args=default_args,
-    description='Ingest Firestore collections using JSON-direct loading with lineage tracking',
+    description='Ingest Firestore collections using JSON-direct loading',
     schedule_interval=timedelta(hours=8),
     catchup=False,
-    tags=['firestore', 'campaigns', 'transactions', 'lineage']
+    tags=['firestore', 'campaigns', 'transactions']
 )
 
-@log_lineage_execution
 def extract_firestore_campaigns(**context):
-    """Extract marketing campaigns from Firestore - WITH LINEAGE"""
+    """Extract marketing campaigns from Firestore"""
     db = firestore.Client(project=PROJECT_ID)
     
     campaigns = []
@@ -55,10 +53,6 @@ def extract_firestore_campaigns(**context):
     
     for doc in docs:
         campaign_data = doc.to_dict()
-        # Convert DatetimeWithNanoseconds to ISO strings
-        for field, value in campaign_data.items():
-            if hasattr(value, 'isoformat'):
-                campaign_data[field] = value.isoformat()
         campaign_data['document_id'] = doc.id
         campaigns.append(campaign_data)
     
@@ -67,13 +61,11 @@ def extract_firestore_campaigns(**context):
     return {
         'campaigns': campaigns,
         'count': len(campaigns),
-        'record_count': len(campaigns),  # For lineage tracking
         'extraction_timestamp': datetime.utcnow().isoformat()
     }
 
-@log_lineage_execution
 def extract_firestore_transactions(**context):
-    """Extract all sales transactions from Firestore with batching - WITH LINEAGE"""
+    """Extract all sales transactions from Firestore with batching"""
     db = firestore.Client(project=PROJECT_ID)
     
     transactions = []
@@ -97,10 +89,6 @@ def extract_firestore_transactions(**context):
             
         for doc in docs:
             transaction_data = doc.to_dict()
-            # Convert DatetimeWithNanoseconds to ISO strings
-            for field, value in transaction_data.items():
-                if hasattr(value, 'isoformat'):
-                    transaction_data[field] = value.isoformat()
             transaction_data['document_id'] = doc.id
             transactions.append(transaction_data)
         
@@ -117,13 +105,11 @@ def extract_firestore_transactions(**context):
     return {
         'transactions': transactions,
         'count': len(transactions),
-        'record_count': len(transactions),  # For lineage tracking
         'extraction_timestamp': datetime.utcnow().isoformat()
     }
 
-@log_lineage_execution
 def validate_transform_campaigns(**context):
-    """Validate and transform campaign data - WITH LINEAGE"""
+    """Validate and transform campaign data"""
     ti = context['ti']
     campaign_data = ti.xcom_pull(task_ids='extract_campaigns')
     
@@ -151,13 +137,11 @@ def validate_transform_campaigns(**context):
     
     return {
         'campaigns': campaigns,
-        'validation_result': validation,
-        'record_count': len(campaigns)  # For lineage tracking
+        'validation_result': validation
     }
 
-@log_lineage_execution
 def validate_transform_transactions(**context):
-    """Validate and transform transaction data - WITH LINEAGE"""
+    """Validate and transform transaction data"""
     ti = context['ti']
     transaction_data = ti.xcom_pull(task_ids='extract_transactions')
     
@@ -189,13 +173,11 @@ def validate_transform_transactions(**context):
     
     return {
         'transactions': transactions,
-        'validation_result': validation,
-        'record_count': len(transactions)  # For lineage tracking
+        'validation_result': validation
     }
 
-@log_lineage_execution
 def load_campaigns_to_datalake(**context):
-    """Load campaigns to data lake - WITH LINEAGE"""
+    """Load campaigns to data lake"""
     ti = context['ti']
     transformed_data = ti.xcom_pull(task_ids='validate_transform_campaigns')
     
@@ -215,9 +197,8 @@ def load_campaigns_to_datalake(**context):
         'record_count': len(campaigns)
     }
 
-@log_lineage_execution
 def load_transactions_to_datalake(**context):
-    """Load transactions to data lake - WITH LINEAGE"""
+    """Load transactions to data lake"""
     ti = context['ti']
     transformed_data = ti.xcom_pull(task_ids='validate_transform_transactions')
     
@@ -237,9 +218,8 @@ def load_transactions_to_datalake(**context):
         'record_count': len(transactions)
     }
 
-@log_lineage_execution
 def prepare_campaigns_for_bigquery(**context):
-    """Convert campaigns to CSV for BigQuery (keeping existing approach) - WITH LINEAGE"""
+    """Convert campaigns to CSV for BigQuery (keeping existing approach)"""
     ti = context['ti']
     transformed_data = ti.xcom_pull(task_ids='validate_transform_campaigns')
     
@@ -255,14 +235,10 @@ def prepare_campaigns_for_bigquery(**context):
     
     logging.info(f"Created campaigns CSV for BigQuery: {csv_filename}")
     
-    return {
-        'csv_filename': csv_filename,
-        'record_count': len(df)
-    }
+    return csv_filename
 
-@log_lineage_execution
 def prepare_transactions_for_bigquery(**context):
-    """Convert transactions to newline-delimited JSON for BigQuery - WITH LINEAGE"""
+    """Convert transactions to newline-delimited JSON for BigQuery"""
     ti = context['ti']
     transformed_data = ti.xcom_pull(task_ids='validate_transform_transactions')
     
@@ -284,50 +260,7 @@ def prepare_transactions_for_bigquery(**context):
     
     logging.info(f"Created transactions newline-delimited JSON: {filename}")
     
-    return {
-        'json_filename': filename,
-        'record_count': len(transactions)
-    }
-
-def capture_campaigns_lineage(**context):
-    """Capture lineage for campaigns ingestion"""
-    tracker = LineageTracker()
-    dag_id = context['dag'].dag_id
-    task_id = context['task'].task_id
-    
-    relationship_id = tracker.capture_transformation_lineage(
-        pipeline_name='Firestore Ingestion Pipeline',
-        dag_id=dag_id,
-        task_id=task_id,
-        source_id='SRC_FIRESTORE_CAMPAIGNS',
-        target_id='TGT_STAGING_CAMPAIGNS',
-        transformation_id='TRANS_CAMP_001',
-        relationship_type='TRANSFORMED',
-        confidence_score=0.95
-    )
-    
-    logging.info(f"Captured campaigns ingestion lineage: {relationship_id}")
-    return f"lineage_captured_campaigns_{relationship_id}"
-
-def capture_transactions_lineage(**context):
-    """Capture lineage for transactions ingestion"""
-    tracker = LineageTracker()
-    dag_id = context['dag'].dag_id
-    task_id = context['task'].task_id
-    
-    relationship_id = tracker.capture_transformation_lineage(
-        pipeline_name='Firestore Ingestion Pipeline',
-        dag_id=dag_id,
-        task_id=task_id,
-        source_id='SRC_FIRESTORE_TRANSACTIONS',
-        target_id='TGT_STAGING_TRANSACTIONS',
-        transformation_id='TRANS_TRANS_001',
-        relationship_type='TRANSFORMED',
-        confidence_score=0.90
-    )
-    
-    logging.info(f"Captured transactions ingestion lineage: {relationship_id}")
-    return f"lineage_captured_transactions_{relationship_id}"
+    return filename
 
 # Task definitions
 extract_campaigns_task = PythonOperator(
@@ -438,7 +371,7 @@ create_transactions_table = BigQueryCreateEmptyTableOperator(
 load_campaigns_bq = GCSToBigQueryOperator(
     task_id='load_campaigns_to_bigquery',
     bucket=DATALAKE_BUCKET,
-    source_objects=['processed/{{ ti.xcom_pull(task_ids="prepare_campaigns_for_bigquery")["csv_filename"] if ti.xcom_pull(task_ids="prepare_campaigns_for_bigquery") is not none else ti.xcom_pull(task_ids="prepare_campaigns_for_bigquery") }}'],
+    source_objects=['processed/{{ ti.xcom_pull(task_ids="prepare_campaigns_for_bigquery") }}'],
     destination_project_dataset_table=f'{PROJECT_ID}.{DATASET_ID}.{CAMPAIGNS_TABLE}',
     write_disposition='WRITE_TRUNCATE',
     source_format='CSV',
@@ -449,29 +382,16 @@ load_campaigns_bq = GCSToBigQueryOperator(
 load_transactions_bq = GCSToBigQueryOperator(
     task_id='load_transactions_to_bigquery',
     bucket=DATALAKE_BUCKET,
-    source_objects=['processed/{{ ti.xcom_pull(task_ids="prepare_transactions_for_bigquery")["json_filename"] if ti.xcom_pull(task_ids="prepare_transactions_for_bigquery") is not none else ti.xcom_pull(task_ids="prepare_transactions_for_bigquery") }}'],
+    source_objects=['processed/{{ ti.xcom_pull(task_ids="prepare_transactions_for_bigquery") }}'],
     destination_project_dataset_table=f'{PROJECT_ID}.{DATASET_ID}.{TRANSACTIONS_TABLE}',
     write_disposition='WRITE_TRUNCATE',
     source_format='NEWLINE_DELIMITED_JSON',  # Changed from CSV to JSON
     dag=dag
 )
 
-# Lineage capture tasks
-capture_campaigns_lineage_task = PythonOperator(
-    task_id='capture_campaigns_lineage',
-    python_callable=capture_campaigns_lineage,
-    dag=dag
-)
-
-capture_transactions_lineage_task = PythonOperator(
-    task_id='capture_transactions_lineage',
-    python_callable=capture_transactions_lineage,
-    dag=dag
-)
-
-# Task Dependencies WITH LINEAGE
+# Task Dependencies
 # Campaigns flow (unchanged - still uses CSV)
-extract_campaigns_task >> validate_campaigns_task >> load_campaigns_datalake_task >> prepare_campaigns_bq_task >> create_campaigns_table >> load_campaigns_bq >> capture_campaigns_lineage_task
+extract_campaigns_task >> validate_campaigns_task >> load_campaigns_datalake_task >> prepare_campaigns_bq_task >> create_campaigns_table >> load_campaigns_bq
 
 # Transactions flow (updated - now uses JSON direct)
-extract_transactions_task >> validate_transactions_task >> load_transactions_datalake_task >> prepare_transactions_bq_task >> create_transactions_table >> load_transactions_bq >> capture_transactions_lineage_task
+extract_transactions_task >> validate_transactions_task >> load_transactions_datalake_task >> prepare_transactions_bq_task >> create_transactions_table >> load_transactions_bq

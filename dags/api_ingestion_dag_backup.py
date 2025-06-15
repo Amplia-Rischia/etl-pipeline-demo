@@ -1,5 +1,5 @@
 """
-API Ingestion DAG - Products API - WITH LINEAGE TRACKING
+API Ingestion DAG - Products API
 /dags/api_ingestion_dag.py
 
 Extract products from API → Data Lake → BigQuery staging
@@ -18,7 +18,6 @@ from io import StringIO
 
 from utils.datalake_utils import DataLakeManager, DataValidator
 from config.validation_schemas import PRODUCT_SCHEMA
-from utils.lineage_tracking import LineageTracker, log_lineage_execution
 
 # Configuration
 API_ENDPOINT = "https://europe-west1-data-demo-etl.cloudfunctions.net/products-api"
@@ -37,15 +36,14 @@ default_args = {
 dag = DAG(
     'api_ingestion_pipeline',
     default_args=default_args,
-    description='Ingest products from API to data lake and BigQuery with lineage tracking',
-    schedule_interval=None,  # Manual trigger only
+    description='Ingest products from API to data lake and BigQuery',
+    schedule_interval=timedelta(hours=12),
     catchup=False,
-    tags=['api', 'products', 'lineage']
+    tags=['api', 'products']
 )
 
-@log_lineage_execution
 def extract_api_data(**context):
-    """Extract all products from API with pagination - WITH LINEAGE"""
+    """Extract all products from API with pagination"""
     all_products = []
     page = 1
     page_size = 50
@@ -94,13 +92,11 @@ def extract_api_data(**context):
     return {
         'products': all_products,
         'total_count': len(all_products),
-        'record_count': len(all_products),  # For lineage tracking
         'extraction_timestamp': datetime.utcnow().isoformat()
     }
 
-@log_lineage_execution
 def validate_transform_api(**context):
-    """Validate and transform API data - WITH LINEAGE"""
+    """Validate and transform API data"""
     ti = context['ti']
     api_data = ti.xcom_pull(task_ids='extract_api')
     
@@ -126,13 +122,11 @@ def validate_transform_api(**context):
     return {
         'products_json': products,  # Keep original JSON
         'products_df': df.to_json(orient='records'),  # For BigQuery
-        'validation_result': validation,
-        'record_count': len(df)  # For lineage tracking
+        'validation_result': validation
     }
 
-@log_lineage_execution
 def load_api_to_datalake(**context):
-    """Load API data to data lake raw layer - WITH LINEAGE"""
+    """Load API data to data lake raw layer"""
     ti = context['ti']
     transformed_data = ti.xcom_pull(task_ids='validate_transform_api')
     
@@ -151,9 +145,8 @@ def load_api_to_datalake(**context):
         'record_count': len(transformed_data['products_json'])
     }
 
-@log_lineage_execution
 def prepare_api_for_bigquery(**context):
-    """Prepare flattened CSV for BigQuery load - WITH LINEAGE"""
+    """Prepare flattened CSV for BigQuery load"""
     ti = context['ti']
     transformed_data = ti.xcom_pull(task_ids='validate_transform_api')
     
@@ -170,30 +163,7 @@ def prepare_api_for_bigquery(**context):
     
     logging.info(f"Created flattened CSV for BigQuery: {csv_filename}")
     
-    return {
-        'csv_filename': csv_filename,
-        'record_count': len(df)
-    }
-
-def capture_api_lineage(**context):
-    """Capture lineage for API ingestion pipeline"""
-    tracker = LineageTracker()
-    dag_id = context['dag'].dag_id
-    task_id = context['task'].task_id
-    
-    relationship_id = tracker.capture_transformation_lineage(
-        pipeline_name='API Ingestion Pipeline',
-        dag_id=dag_id,
-        task_id=task_id,
-        source_id='SRC_API_PRODUCTS',
-        target_id='TGT_STAGING_PRODUCTS',
-        transformation_id='TRANS_PROD_001',
-        relationship_type='TRANSFORMED',
-        confidence_score=0.95
-    )
-    
-    logging.info(f"Captured API ingestion lineage: {relationship_id}")
-    return f"lineage_captured_api_{relationship_id}"
+    return csv_filename
 
 # Tasks
 extract_task = PythonOperator(
@@ -241,7 +211,7 @@ create_table = BigQueryCreateEmptyTableOperator(
 load_bq = GCSToBigQueryOperator(
     task_id='load_to_bigquery',
     bucket=DATALAKE_BUCKET,
-    source_objects=['processed/{{ ti.xcom_pull(task_ids="prepare_for_bigquery")["csv_filename"] if ti.xcom_pull(task_ids="prepare_for_bigquery") is not none else ti.xcom_pull(task_ids="prepare_for_bigquery") }}'],
+    source_objects=['processed/{{ ti.xcom_pull(task_ids="prepare_for_bigquery") }}'],
     destination_project_dataset_table=f'{PROJECT_ID}.{DATASET_ID}.{TABLE_ID}',
     write_disposition='WRITE_TRUNCATE',  # Replace data for API
     source_format='CSV',
@@ -249,12 +219,5 @@ load_bq = GCSToBigQueryOperator(
     dag=dag
 )
 
-# Lineage capture task
-capture_lineage_task = PythonOperator(
-    task_id='capture_api_lineage',
-    python_callable=capture_api_lineage,
-    dag=dag
-)
-
-# Flow WITH LINEAGE
-extract_task >> validate_task >> load_datalake_task >> prepare_bq_task >> create_table >> load_bq >> capture_lineage_task
+# Flow
+extract_task >> validate_task >> load_datalake_task >> prepare_bq_task >> create_table >> load_bq
