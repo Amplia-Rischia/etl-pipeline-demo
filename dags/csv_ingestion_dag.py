@@ -30,6 +30,7 @@ default_args = {
     'owner': 'data-team',
     'start_date': datetime(2025, 6, 12),
     'retries': 1,
+    'execution_timeout': timedelta(minutes=30),
     'retry_delay': timedelta(minutes=5)
 }
 

@@ -33,7 +33,7 @@ default_args = {
     'email_on_retry': False,
     'retries': 2,
     'retry_delay': timedelta(minutes=5),
-    'execution_timeout': timedelta(minutes=60),
+    'execution_timeout': timedelta(minutes=50),
 }
 
 def read_sql_from_gcs(sql_file_name):
