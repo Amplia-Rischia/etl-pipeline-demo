@@ -1,0 +1,231 @@
+=== Step 1.1: Verifying Star Schema Tables ===
+Error in query string: Error processing job 'data-demo-
+etl:bqjob_r733d9f7e0c4cf88d_000001977d96b1b0_1': Unrecognized name: row_count at
+[5:3]
+Waiting on bqjob_r141c4d56ff1f09f2_000001977d96bc56_1 ... (0s) Current status: RUNNING                                                                                      Waiting on bqjob_r141c4d56ff1f09f2_000001977d96bc56_1 ... (0s) Current status: DONE   
++-------------------------+--------------+
+|       table_name        | record_count |
++-------------------------+--------------+
+| dim_campaigns           |         1000 |
+| dim_customers           |         9995 |
+| dim_products            |          500 |
+| fact_sales_transactions |        20190 |
++-------------------------+--------------+
+Table data-demo-etl:data_warehouse.dim_customers
+
+   Last modified                Schema                Total Rows   Total Bytes   Expiration   Time Partitioning        Clustered Fields        Total Logical Bytes   Total Physical Bytes   Labels  
+ ----------------- --------------------------------- ------------ ------------- ------------ ------------------- ---------------------------- --------------------- ---------------------- -------- 
+  17 Jun 10:33:00   |- customer_id: string            9995         1428475                                        country, registration_date   1428475               337410                         
+                    |- first_name: string                                                                                                                                                           
+                    |- last_name: string                                                                                                                                                            
+                    |- email: string                                                                                                                                                                
+                    |- phone: string                                                                                                                                                                
+                    |- address: string                                                                                                                                                              
+                    |- city: string                                                                                                                                                                 
+                    |- country: string                                                                                                                                                              
+                    |- age: integer                                                                                                                                                                 
+                    |- registration_date: date                                                                                                                                                      
+                    |- created_date: timestamp                                                                                                                                                      
+                    |- last_updated_date: timestamp                                                                                                                                                 
+                    |- email_valid: boolean                                                                                                                                                         
+                    |- phone_valid: boolean                                                                                                                                                         
+
+Table data-demo-etl:data_warehouse.dim_products
+
+   Last modified                Schema                Total Rows   Total Bytes   Expiration   Time Partitioning   Clustered Fields   Total Logical Bytes   Total Physical Bytes   Labels  
+ ----------------- --------------------------------- ------------ ------------- ------------ ------------------- ------------------ --------------------- ---------------------- -------- 
+  17 Jun 10:33:00   |- product_id: string             500          106166                                         category           106166                25690                          
+                    |- name: string                                                                                                                                                       
+                    |- category: string                                                                                                                                                   
+                    |- subcategory: string                                                                                                                                                
+                    |- brand: string                                                                                                                                                      
+                    |- price: float                                                                                                                                                       
+                    |- currency: string                                                                                                                                                   
+                    |- description: string                                                                                                                                                
+                    |- availability: boolean                                                                                                                                              
+                    |- stock_quantity: integer                                                                                                                                            
+                    |- rating: float                                                                                                                                                      
+                    |- reviews_count: integer                                                                                                                                             
+                    |- weight_kg: float                                                                                                                                                   
+                    |- country_origin: string                                                                                                                                             
+                    |- created_date: timestamp                                                                                                                                            
+                    |- last_updated_date: timestamp                                                                                                                                       
+                    |- name_valid: boolean                                                                                                                                                
+                    |- category_valid: boolean                                                                                                                                            
+                    |- price_valid: boolean                                                                                                                                               
+
+Table data-demo-etl:data_warehouse.dim_campaigns
+
+   Last modified                   Schema                  Total Rows   Total Bytes   Expiration   Time Partitioning    Clustered Fields     Total Logical Bytes   Total Physical Bytes   Labels  
+ ----------------- -------------------------------------- ------------ ------------- ------------ ------------------- --------------------- --------------------- ---------------------- -------- 
+  17 Jun 10:33:00   |- campaign_id: string                 1000         192726                                         channel, start_date   192726                204911                         
+                    |- name: string                                                                                                                                                               
+                    |- channel: string                                                                                                                                                            
+                    |- status: string                                                                                                                                                             
+                    |- target_audience: string                                                                                                                                                    
+                    |- budget: float                                                                                                                                                              
+                    |- actual_spend: float                                                                                                                                                        
+                    |- conversion_rate: float                                                                                                                                                     
+                    |- impressions: integer                                                                                                                                                       
+                    |- clicks: integer                                                                                                                                                            
+                    |- conversions: integer                                                                                                                                                       
+                    |- start_date: date                                                                                                                                                           
+                    |- end_date: date                                                                                                                                                             
+                    |- created_date: timestamp                                                                                                                                                    
+                    |- last_updated_date: timestamp                                                                                                                                               
+                    |- name_valid: boolean                                                                                                                                                        
+                    |- channel_valid: boolean                                                                                                                                                     
+                    |- status_valid: boolean                                                                                                                                                      
+                    |- over_budget: boolean                                                                                                                                                       
+                    |- spend_percentage: float                                                                                                                                                    
+                    |- calculated_conversion_rate: float                                                                                                                                          
+                    |- campaign_duration_days: integer                                                                                                                                            
+
+Table data-demo-etl:data_warehouse.fact_sales_transactions
+
+   Last modified                   Schema                  Total Rows   Total Bytes   Expiration         Time Partitioning            Clustered Fields       Total Logical Bytes   Total Physical Bytes   Labels  
+ ----------------- -------------------------------------- ------------ ------------- ------------ ------------------------------- ------------------------- --------------------- ---------------------- -------- 
+  17 Jun 10:33:44   |- transaction_id: string              20190        4367123                    DAY (field: transaction_date)   customer_id, product_id   4367123               9948757                        
+                    |- customer_id: string                                                                                                                                                                        
+                    |- product_id: string                                                                                                                                                                         
+                    |- campaign_id: string                                                                                                                                                                        
+                    |- quantity: integer                                                                                                                                                                          
+                    |- unit_price: float                                                                                                                                                                          
+                    |- amount: float                                                                                                                                                                              
+                    |- discount_amount: float                                                                                                                                                                     
+                    |- tax_amount: float                                                                                                                                                                          
+                    |- transaction_date: date                                                                                                                                                                     
+                    |- payment_method: string                                                                                                                                                                     
+                    |- status: string                                                                                                                                                                             
+                    |- shipping_address: string                                                                                                                                                                   
+                    |- order_notes: string                                                                                                                                                                        
+                    |- created_timestamp: timestamp                                                                                                                                                               
+                    |- calculated_gross_amount: float                                                                                                                                                             
+                    |- calculated_total_amount: float                                                                                                                                                             
+                    |- discount_percentage: float                                                                                                                                                                 
+                    |- tax_rate: float                                                                                                                                                                            
+                    |- amount_calculation_valid: boolean                                                                                                                                                          
+                    |- status_valid: boolean                                                                                                                                                                      
+                    |- payment_method_valid: boolean                                                                                                                                                              
+
+=== Step 1.2: Testing Referential Integrity ===
+Waiting on bqjob_ra2c9821204ad816_000001977d96f933_1 ... (0s) Current status: RUNNING                                                                                     Waiting on bqjob_ra2c9821204ad816_000001977d96f933_1 ... (0s) Current status: DONE   
++--------------------+---------------------+------------------------+
+| total_transactions | valid_customer_refs | customer_integrity_pct |
++--------------------+---------------------+------------------------+
+|              20190 |               20190 |                  100.0 |
++--------------------+---------------------+------------------------+
++--------------------+--------------------+-----------------------+
+| total_transactions | valid_product_refs | product_integrity_pct |
++--------------------+--------------------+-----------------------+
+|              20190 |              20190 |                 100.0 |
++--------------------+--------------------+-----------------------+
++--------------------+---------------------+------------------------+-------------------+
+| total_transactions | valid_campaign_refs | campaign_integrity_pct | no_campaign_count |
++--------------------+---------------------+------------------------+-------------------+
+|              20190 |               12201 |                  60.43 |                 0 |
++--------------------+---------------------+------------------------+-------------------+
++--------------------+-------+
+|       issue        | count |
++--------------------+-------+
+| orphaned_campaigns |  7989 |
+| orphaned_products  |     0 |
+| orphaned_customers |     0 |
++--------------------+-------+
+=== Step 1.3: Checking Data Quality Standards ===
++-------------------------+---------------+------------+------------------+
+|       table_name        | total_records | unique_ids | uniqueness_check |
++-------------------------+---------------+------------+------------------+
+| dim_campaigns           |          1000 |       1000 | PASS             |
+| dim_products            |           500 |        500 | PASS             |
+| fact_sales_transactions |         20190 |      20190 | PASS             |
+| dim_customers           |          9995 |       9995 | PASS             |
++-------------------------+---------------+------------+------------------+
++---------------+-------------------------+--------------------+----------------------+
+|  table_name   | first_name_completeness | email_completeness | country_completeness |
++---------------+-------------------------+--------------------+----------------------+
+| dim_products  |                   100.0 |              100.0 |                100.0 |
+| dim_customers |                   100.0 |              100.0 |                100.0 |
++---------------+-------------------------+--------------------+----------------------+
++-------------------------+-------------------+------------------+----------------------+------------------------+
+|       check_type        | null_customer_ids | null_product_ids | null_or_zero_amounts | null_transaction_dates |
++-------------------------+-------------------+------------------+----------------------+------------------------+
+| fact_transactions_nulls |                 0 |                0 |                    0 |                      0 |
++-------------------------+-------------------+------------------+----------------------+------------------------+
++-----------------+----------------------+--------------------+-------------------+--------------+
+|   check_type    | earliest_transaction | latest_transaction | dates_before_2020 | future_dates |
++-----------------+----------------------+--------------------+-------------------+--------------+
+| date_validation |           2024-12-13 |         2025-06-09 |                 0 |            0 |
++-----------------+----------------------+--------------------+-------------------+--------------+
+=== Step 1.4: Testing Analytical Joins ===
+Testing customer analysis join...
++----------------+-------------------+--------------------+-----------------------+
+|    country     | transaction_count |   total_revenue    | avg_transaction_value |
++----------------+-------------------+--------------------+-----------------------+
+| ITALY          |              8171 |  7684087.429999996 |     940.4096720107699 |
+| FRANCE         |              3871 | 3677366.7699999986 |      949.978499095841 |
+| SPAIN          |              3129 |  2849960.720000001 |     910.8215787791629 |
+| GERMANY        |              2927 | 2639872.3099999996 |     901.9037615305775 |
+| NETHERLANDS    |              1072 |          942124.98 |     878.8479291044777 |
+| UNITED KINGDOM |              1020 |  896362.1400000002 |     878.7864117647057 |
++----------------+-------------------+--------------------+-----------------------+
+
+real	0m3.135s
+user	0m2.230s
+sys	0m0.305s
+Testing complex multi-dimensional join...
++-------------+---------+--------------+-------------------+--------------------+-----------------------+
+|  category   | country |   channel    | transaction_count |   total_revenue    | avg_transaction_value |
++-------------+---------+--------------+-------------------+--------------------+-----------------------+
+| BOOKS       | ITALY   | NULL         |               679 |           698641.3 |    1028.9268041237108 |
+| HOME_GARDEN | ITALY   | NULL         |               607 |  619155.1599999999 |    1020.0249752883037 |
+| SPORTS      | ITALY   | NULL         |               629 |  597788.5499999998 |      950.379252782194 |
+| CLOTHING    | ITALY   | NULL         |               640 |  549256.4999999998 |     858.2132812500001 |
+| ELECTRONICS | ITALY   | NULL         |               620 |          534025.54 |     861.3315161290321 |
+| BOOKS       | FRANCE  | NULL         |               332 |  351304.3300000001 |    1058.1455722891558 |
+| SPORTS      | FRANCE  | NULL         |               299 |          312126.92 |     1043.902742474917 |
+| ELECTRONICS | FRANCE  | NULL         |               314 | 294144.98999999993 |     936.7674840764328 |
+| HOME_GARDEN | SPAIN   | NULL         |               284 | 287822.11000000004 |    1013.4581338028171 |
+| CLOTHING    | FRANCE  | NULL         |               315 |          285037.88 |     904.8821587301593 |
+| HOME_GARDEN | FRANCE  | NULL         |               306 | 254844.04999999993 |     832.8236928104574 |
+| BOOKS       | GERMANY | NULL         |               274 | 252170.92000000007 |     920.3318248175186 |
+| BOOKS       | SPAIN   | NULL         |               256 |          249994.01 |     976.5391015624996 |
+| SPORTS      | SPAIN   | NULL         |               252 | 219536.35000000012 |     871.1759920634922 |
+| ELECTRONICS | SPAIN   | NULL         |               237 |          210045.82 |     886.2692827004216 |
+| CLOTHING    | GERMANY | NULL         |               249 | 196314.10000000003 |     788.4100401606426 |
+| HOME_GARDEN | GERMANY | NULL         |               210 | 194244.02999999997 |     924.9715714285716 |
+| BOOKS       | ITALY   | SOCIAL_MEDIA |               165 | 188991.50999999998 |    1145.4030909090907 |
+| CLOTHING    | SPAIN   | NULL         |               239 | 181080.92999999996 |     757.6607949790798 |
+| ELECTRONICS | GERMANY | NULL         |               216 |           180866.7 |     837.3458333333333 |
++-------------+---------+--------------+-------------------+--------------------+-----------------------+
+
+real	0m3.462s
+user	0m2.222s
+sys	0m0.293s
+Testing time-series analysis...
++------------+-------------------+--------------------+------------------+
+|   month    | transaction_count |  monthly_revenue   | unique_customers |
++------------+-------------------+--------------------+------------------+
+| 2025-06-01 |                18 |           15862.05 |               18 |
+| 2025-05-01 |              1131 | 1004824.6600000001 |             1066 |
+| 2025-04-01 |              4325 | 3904216.5900000003 |             3505 |
+| 2025-03-01 |              7772 |         7330057.36 |             5414 |
+| 2025-02-01 |              2485 | 2235456.0899999994 |             2172 |
+| 2025-01-01 |              3175 |         2994064.62 |             2728 |
+| 2024-12-01 |              1284 | 1205292.9799999997 |             1198 |
++------------+-------------------+--------------------+------------------+
+
+real	0m3.189s
+user	0m2.213s
+sys	0m0.266s
+=== Step 1.5: Final Validation Summary ===
++--------------------+----------------------+----------------+---------------+----------------+-------------------+----------------------+
+|    report_type     | validation_timestamp | customer_count | product_count | campaign_count | transaction_count |    total_revenue     |
++--------------------+----------------------+----------------+---------------+----------------+-------------------+----------------------+
+| VALIDATION_SUMMARY |  2025-06-17 11:12:53 |           9995 |           500 |           1000 |             20190 | 1.8689774349999987E7 |
++--------------------+----------------------+----------------+---------------+----------------+-------------------+----------------------+
+
+=== Task 1 Complete ===
+All validation commands executed. Review results above for data warehouse validation status.
+Expected completion time: 30 minutes
+

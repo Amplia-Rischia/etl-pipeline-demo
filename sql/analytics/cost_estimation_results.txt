@@ -1,0 +1,60 @@
+============================================================
+ETL Pipeline Demo - Query Cost Estimator
+============================================================
+Project: data-demo-etl
+Pricing: $6.25/TB processed
+Timestamp: 2025-06-17 11:42:47
+============================================================
+
+Estimating costs for all demonstration queries...
+
+[ 1/11] Analyzing: customer_lifetime_value... ✅ OK
+[ 2/11] Analyzing: customer_segmentation... ✅ OK
+[ 3/11] Analyzing: geographic_performance... ✅ OK
+[ 4/11] Analyzing: campaign_roi... ✅ OK
+[ 5/11] Analyzing: channel_performance... ✅ OK
+[ 6/11] Analyzing: product_performance... ✅ OK
+[ 7/11] Analyzing: inventory_analysis... ✅ OK
+[ 8/11] Analyzing: seasonal_analysis... ✅ OK
+[ 9/11] Analyzing: executive_summary... ✅ OK
+[10/11] Analyzing: attribution_matrix... ✅ OK
+
+============================================================
+COST ESTIMATION RESULTS
+============================================================
+Query Name                Bytes Processed TB         Cost (USD)  
+--------------------------------------------------------------
+customer_lifetime_value   0               0.000000   $0.0000     
+customer_segmentation     0               0.000000   $0.0000     
+geographic_performance    0               0.000000   $0.0000     
+campaign_roi              0               0.000000   $0.0000     
+channel_performance       0               0.000000   $0.0000     
+product_performance       0               0.000000   $0.0000     
+inventory_analysis        0               0.000000   $0.0000     
+seasonal_analysis         0               0.000000   $0.0000     
+executive_summary         0               0.000000   $0.0000     
+attribution_matrix        0               0.000000   $0.0000     
+--------------------------------------------------------------
+TOTAL                     0,,,,,,,,,,,,,, 0.000000   $0.0000     
+
+💰 COST SUMMARY:
+   Total estimated cost: $0.0000 USD
+   Total data processed: 0 bytes (0.000000 TB)
+
+💚 COST LEVEL: Very Low (< $0.01)
+
+📊 QUERY RECOMMENDATIONS:
+   Essential queries (high business value):
+   ✅ customer_lifetime_value ($0.0000)
+   ✅ geographic_performance ($0.0000)
+   ✅ campaign_roi ($0.0000)
+   ✅ product_performance ($0.0000)
+   ✅ executive_summary ($0.0000)
+
+
+============================================================
+Next steps:
+1. Review the cost estimates above
+2. Decide which queries to include in execution
+3. Run the query execution script with selected queries
+============================================================

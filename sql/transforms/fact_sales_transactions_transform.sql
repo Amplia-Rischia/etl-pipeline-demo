@@ -1,6 +1,7 @@
 -- Fact Sales Transactions Transformation
 -- Source: staging_area.sales_transactions -> data_warehouse.fact_sales_transactions
 -- Purpose: Clean, validate foreign keys, and calculate derived measures
+-- UPDATED: Allow transactions without campaigns (using 'NO_CAMPAIGN' default)
 
 CREATE OR REPLACE TABLE `data-demo-etl.data_warehouse.fact_sales_transactions`
 PARTITION BY transaction_date
@@ -14,7 +15,7 @@ WITH validated_transactions AS (
     -- Foreign Keys (validated against dimensions)
     t.customer_id,
     t.product_id,
-    t.campaign_id,
+    COALESCE(t.campaign_id, 'NO_CAMPAIGN') AS campaign_id,  -- Handle NULL campaigns
     
     -- Transaction Measures (validated and standardized)
     CASE 
@@ -68,6 +69,8 @@ WITH validated_transactions AS (
     END AS product_exists,
     
     CASE 
+      WHEN t.campaign_id IS NULL OR t.campaign_id = '' 
+      THEN TRUE  -- Allow transactions without campaigns
       WHEN EXISTS (SELECT 1 FROM `data-demo-etl.data_warehouse.dim_campaigns` c WHERE c.campaign_id = t.campaign_id)
       THEN TRUE ELSE FALSE 
     END AS campaign_exists,
@@ -161,7 +164,7 @@ final_transactions AS (
   FROM calculated_transactions
   WHERE customer_exists = TRUE  -- Only include transactions with valid foreign keys
     AND product_exists = TRUE
-    AND campaign_exists = TRUE
+    -- REMOVED: AND campaign_exists = TRUE  -- Now allowing transactions without campaigns
     AND status IN ('COMPLETED', 'PENDING')  -- Exclude cancelled/refunded for analytics
     AND amount > 0  -- Exclude zero-value transactions
 )

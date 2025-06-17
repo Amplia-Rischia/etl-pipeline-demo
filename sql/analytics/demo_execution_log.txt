@@ -1,0 +1,61 @@
+======================================================================
+ETL Pipeline Demo - Query Execution Script
+======================================================================
+Project: data-demo-etl
+Queries to execute: 11
+Output directory: demo_query_results
+Timestamp: 2025-06-17 11:51:32
+======================================================================
+
+✅ Created output directory: demo_query_results
+
+Executing demonstration queries...
+--------------------------------------------------
+[ 1/11] 🔄 Executing: customer_lifetime_value... ✅ SUCCESS (20 rows)
+[ 2/11] 🔄 Executing: customer_segmentation... ✅ SUCCESS (165 rows)
+[ 3/11] 🔄 Executing: geographic_performance... ✅ SUCCESS (6 rows)
+[ 4/11] 🔄 Executing: campaign_roi... ✅ SUCCESS (1000 rows)
+[ 5/11] 🔄 Executing: channel_performance... ❌ FAILED
+   Error executing channel_performance: 
+[ 6/11] 🔄 Executing: product_performance... ✅ SUCCESS (25 rows)
+[ 7/11] 🔄 Executing: inventory_analysis... ✅ SUCCESS (50 rows)
+[ 8/11] 🔄 Executing: seasonal_analysis... ✅ SUCCESS (7 rows)
+[ 9/11] 🔄 Executing: cohort_analysis... ✅ SUCCESS (27 rows)
+[10/11] 🔄 Executing: executive_summary... ✅ SUCCESS (1 rows)
+[11/11] 🔄 Executing: attribution_matrix... ✅ SUCCESS (50 rows)
+
+--------------------------------------------------
+Execution complete: 10/11 queries successful
+
+📋 Generating executive summary report...
+📋 Executive summary saved to: demo_query_results/00_EXECUTIVE_SUMMARY.md
+
+======================================================================
+EXECUTION SUMMARY
+======================================================================
+✅ Successful queries: 10/11
+📁 Results directory: demo_query_results
+📋 Executive summary: demo_query_results/00_EXECUTIVE_SUMMARY.md
+
+⚠️  Some queries failed - check individual error messages above
+
+📁 Available result files:
+   00_EXECUTIVE_SUMMARY.md (6,912 bytes)
+   attribution_matrix_results.csv (5,421 bytes)
+   campaign_roi_results.csv (118,746 bytes)
+   cohort_analysis_results.csv (768 bytes)
+   customer_lifetime_value_results.csv (2,092 bytes)
+   customer_segmentation_results.csv (12,709 bytes)
+   executive_summary_results.csv (303 bytes)
+   geographic_performance_results.csv (756 bytes)
+   inventory_analysis_results.csv (5,019 bytes)
+   product_performance_results.csv (3,062 bytes)
+   seasonal_analysis_results.csv (724 bytes)
+
+======================================================================
+Next steps:
+1. Review executive summary report for business insights
+2. Examine individual CSV files for detailed analysis
+3. Present results to stakeholders
+4. Deploy external access layer for self-service analytics
+======================================================================
